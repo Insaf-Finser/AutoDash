@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     UPLOAD_DIR: str = "uploads"
+
+    STORAGE_PROVIDER: str = "local"
+
+    LOCAL_STORAGE_PATH: str = "storage"
     
     model_config = SettingsConfigDict(
         env_file=".env",
