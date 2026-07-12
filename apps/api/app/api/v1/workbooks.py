@@ -3,6 +3,7 @@ from app.schemas.status import StatusResponse
 
 from app.database.session import get_db
 from app.repositories.workbook_repository import WorkbookRepository
+from app.repositories.worksheet_repository import WorksheetRepository
 from app.schemas import WorkbookResponse
 from app.services.storage import get_storage_service
 from app.services.workbook_service import WorkbookService
@@ -26,13 +27,15 @@ async def upload_workbook(
     db=Depends(get_db),
 ):
 
-    repository = WorkbookRepository(db)
+    workbook_repository = WorkbookRepository(db)
+    worksheet_repository = WorksheetRepository(db)
 
     storage = get_storage_service()
 
     service = WorkbookService(
-        repository,
-        storage,
+        workbook_repository=workbook_repository,
+        worksheet_repository=worksheet_repository,
+        storage=storage,
     )
 
     workbook = await service.upload_workbook(

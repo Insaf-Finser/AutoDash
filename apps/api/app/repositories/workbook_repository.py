@@ -30,7 +30,6 @@ class WorkbookRepository(BaseRepository[Workbook]):
         file_extension: str,
         file_size: int,
         sheet_count:int,
-        sheet_names:list[str]
     ) -> Workbook:
 
         workbook = Workbook(
@@ -42,7 +41,6 @@ class WorkbookRepository(BaseRepository[Workbook]):
             file_extension=file_extension,
             file_size=file_size,
             sheet_count=sheet_count,
-            sheet_names=sheet_names,
             status=WorkbookStatus.UPLOADED,
         )
 

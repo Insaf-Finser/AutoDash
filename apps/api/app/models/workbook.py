@@ -3,10 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import BigInteger, DateTime, Enum, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.enums import WorkbookStatus
 from app.models.base import BaseModel
+
+
 
 
 class Workbook(BaseModel):
@@ -72,4 +74,10 @@ class Workbook(BaseModel):
     processed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
+    )
+
+    worksheets = relationship(
+        "Worksheet",
+        back_populates="workbook",
+        cascade="all, delete-orphan",
     )

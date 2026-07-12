@@ -1,6 +1,11 @@
 from pydantic import BaseModel
 
 
+class WorksheetMetadata(BaseModel):
+    name:str
+    row_count:int
+    column_count:int
+
 class WorkbookMetadata(BaseModel):
     """
     Lightweight workbook metadata extracted during upload.
@@ -8,4 +13,5 @@ class WorkbookMetadata(BaseModel):
 
     sheet_count: int
 
-    sheet_names: list[str]
+    worksheets: list[WorksheetMetadata]
+
