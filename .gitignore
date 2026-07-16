@@ -24,14 +24,4 @@
 .backup.tar.bz2
 .backup.tar.xz
 .backup.tar.lzma
-.backup.tar.lzma
-
-storage/workbooks/*
-storage/processed/*
-storage/exports/*
-storage/temp/*
-
-!storage/workbooks/.gitkeep
-!storage/processed/.gitkeep
-!storage/exports/.gitkeep
-!storage/temp/.gitkeep
+.backup.tar.lzma    
