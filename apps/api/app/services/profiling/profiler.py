@@ -45,17 +45,26 @@ class Profiler:
 
                 stats = self.statistics.profile(series)
 
+                semantic_type, confidence = self.semantic.detect(
+                    column_name=column_name,
+                    physical_type=physical_type,
+                    unique_count=stats.unique_count,
+                    row_count=stats.row_count,
+                    sample_values=stats.sample_values,
+                )
+
                 columns.append(
                     ColumnProfile(
                         name=column_name,
                         physical_type=physical_type,
-                        semantic_type=self.semantic.detect(
-                            column_name,
-                            physical_type,
-                        ),
-                        confidence=1.0,
-                        null_count=stats["null_count"],
-                        unique_count=stats["unique_count"],
+                        semantic_type=semantic_type,
+                        confidence=confidence,
+                        row_count=stats.row_count,
+                        null_count=stats.null_count,
+                        unique_count=stats.unique_count,
+                        unique_ratio=stats.unique_ratio,
+                        sample_values=stats.sample_values,
+
                     )
                 )
 
