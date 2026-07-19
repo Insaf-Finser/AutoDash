@@ -4,12 +4,35 @@ from uuid import uuid4
 
 from app.services.dashboard.models import Chart, Dashboard
 from app.services.dashboard.types import ChartType
-from app.services.profiling.models import WorkbookProfile
+from app.services.profiler.models import (
+    ColumnProfile,
+    WorkbookProfile,
+    WorksheetProfile,
+)
+
+from dataclasses import dataclass
+
+@dataclass(slots=True)
+class WorksheetContext:
+    dates: list[ColumnProfile]
+    categories: list[ColumnProfile]
+    measures: list[ColumnProfile]
+    booleans: list[ColumnProfile]
 
 
 class DashboardRecommender:
     """
-    Generates chart recommendations from a WorkbookProfile.
+    Rule-based dashboard recommendation engine.
+
+    Responsibilities:
+        - Analyze worksheet semantics
+        - Recommend charts
+        - Return a Dashboard
+
+    Does NOT:
+        - Parse Excel
+        - Generate chart data
+        - Render charts
     """
 
     def recommend(
@@ -20,106 +43,257 @@ class DashboardRecommender:
         charts: list[Chart] = []
 
         for worksheet in profile.worksheets:
-            print(f"\nWorksheet: {worksheet.name}")
 
-            for column in worksheet.columns:
-                print(column.name, "->", column.semantic_type)
+            context = self._group_columns(worksheet)
 
-        for worksheet in profile.worksheets:
-
-            dates = []
-            categories = []
-            measures = []
-            booleans = []
-
-            # -----------------------------
-            # Group columns
-            # -----------------------------
-
-            for column in worksheet.columns:
-
-                if column.semantic_type == "date":
-                    dates.append(column)
-
-                elif column.semantic_type == "category":
-                    categories.append(column)
-
-                elif column.semantic_type == "measure":
-                    measures.append(column)
-
-                elif column.semantic_type == "boolean":
-                    booleans.append(column)
-
-            # -----------------------------
-            # Rule 1
-            # Date + Measure
-            # -----------------------------
-
-            for date in dates:
-                for measure in measures:
-
-                    charts.append(
-                        Chart(
-                            id=str(uuid4()),
-                            worksheet=worksheet.name,
-                            type=ChartType.LINE,
-                            title=f"{measure.name} over {date.name}",
-                            x=date.name,
-                            y=measure.name,
-                        )
-                    )
-
-            # -----------------------------
-            # Rule 2
-            # Category + Measure
-            # -----------------------------
-
-            for category in categories:
-                for measure in measures:
-
-                    charts.append(
-                        Chart(
-                            id=str(uuid4()),
-                            worksheet=worksheet.name,
-                            type=ChartType.BAR,
-                            title=f"{measure.name} by {category.name}",
-                            x=category.name,
-                            y=measure.name,
-                        )
-                    )
-
-            # -----------------------------
-            # Rule 3
-            # Boolean
-            # -----------------------------
-
-            for boolean in booleans:
-
-                charts.append(
-                    Chart(
-                        id=str(uuid4()),
-                        worksheet=worksheet.name,
-                        type=ChartType.PIE,
-                        title=f"{boolean.name} Distribution",
-                        x=boolean.name,
-                    )
+            charts.extend(
+                self._recommend_time_series(
+                    worksheet,
+                    context.dates,
+                    context.measures,
                 )
+            )
 
-            # -----------------------------
-            # Rule 4
-            # KPI
-            # -----------------------------
+            charts.extend(
+                self._recommend_category_charts(
+                    worksheet,
+                    context.categories,
+                    context.measures,
+                )
+            )
 
+            charts.extend(
+                self._recommend_boolean_charts(
+                    worksheet,
+                    context.measures,
+                )
+            )
+
+            charts.extend(
+                self._recommend_kpis(
+                    worksheet,
+                    context.measures,
+                )
+            )
+
+            charts.extend(
+                self._recommend_scatter(
+                    worksheet,
+                    context.measures,
+                )
+            )
+
+            charts.extend(
+                self._recommend_histograms(
+                    worksheet,
+                    context.measures,
+                )
+            )
+
+        return Dashboard(charts=charts)
+
+    # ==========================================================
+    # Helpers
+    # ==========================================================
+
+    def _group_columns(
+        self,
+        worksheet: WorksheetProfile,
+    ) -> dict[str, list[ColumnProfile]]:
+
+        grouped = {
+            "dates": [],
+            "categories": [],
+            "measures": [],
+            "booleans": [],
+        }
+
+        for column in worksheet.columns:
+
+            match column.semantic_type:
+
+                case "date":
+                    grouped["dates"].append(column)
+
+                case "category":
+                    grouped["categories"].append(column)
+
+                case "measure":
+                    grouped["measures"].append(column)
+
+                case "boolean":
+                    grouped["booleans"].append(column)
+
+        return grouped
+
+    def _create_chart(
+        self,
+        *,
+        worksheet: str,
+        chart_type: ChartType,
+        title: str,
+        x: str | None = None,
+        y: str | None = None,
+    ) -> Chart:
+
+        return Chart(
+            id=str(uuid4()),
+            worksheet=worksheet,
+            type=chart_type,
+            title=title,
+            x=x,
+            y=y,
+        )
+
+    # ==========================================================
+    # Recommendation Rules
+    # ==========================================================
+
+    def _recommend_time_series(
+        self,
+        worksheet: WorksheetProfile,
+        dates: list[ColumnProfile],
+        measures: list[ColumnProfile],
+    ) -> list[Chart]:
+
+        charts: list[Chart] = []
+
+        if not dates or not measures:
+            return charts
+
+        for date in dates:
             for measure in measures:
 
                 charts.append(
-                    Chart(
-                        id=str(uuid4()),
+                    self._create_chart(
                         worksheet=worksheet.name,
-                        type=ChartType.KPI,
-                        title=f"Total {measure.name}",
+                        chart_type=ChartType.LINE,
+                        title=f"{measure.name} over {date.name}",
+                        x=date.name,
                         y=measure.name,
                     )
                 )
 
-        return Dashboard(charts=charts)
+        return charts
+
+    def _recommend_category_charts(
+        self,
+        worksheet: WorksheetProfile,
+        categories: list[ColumnProfile],
+        measures: list[ColumnProfile],
+    ) -> list[Chart]:
+
+        charts: list[Chart] = []
+
+        if not categories or not measures:
+            return charts
+
+        for category in categories:
+            for measure in measures:
+
+                charts.append(
+                    self._create_chart(
+                        worksheet=worksheet.name,
+                        chart_type=ChartType.BAR,
+                        title=f"{measure.name} by {category.name}",
+                        x=category.name,
+                        y=measure.name,
+                    )
+                )
+
+        return charts
+    
+    def _recommend_boolean_charts(
+        self,
+        worksheet: WorksheetProfile,
+        booleans: list[ColumnProfile],
+    ) -> list[Chart]:
+
+        charts: list[Chart] = []
+
+        if not booleans:
+            return charts
+
+        for boolean in booleans:
+
+            charts.append(
+                self._create_chart(
+                    worksheet=worksheet.name,
+                    chart_type=ChartType.PIE,
+                    title=f"{boolean.name} Distribution",
+                    x=boolean.name,
+                )
+            )
+
+        return charts
+
+    def _recommend_kpis(
+        self,
+        worksheet: WorksheetProfile,
+        measures: list[ColumnProfile],
+    ) -> list[Chart]:
+
+        charts: list[Chart] = []
+
+        if not measures:
+            return charts
+
+        for measure in measures:
+
+            charts.append(
+                self._create_chart(
+                    worksheet=worksheet.name,
+                    chart_type=ChartType.KPI,
+                    title=f"Total {measure.name}",
+                    y=measure.name,
+                )
+            )
+
+        return charts
+
+    def _recommend_scatter(
+        self,
+        worksheet: WorksheetProfile,
+        measures: list[ColumnProfile],
+    ) -> list[Chart]:
+
+        charts: list[Chart] = []
+
+        if len(measures) < 2:
+            return charts
+
+        for i in range(len(measures)):
+            for j in range(i + 1, len(measures)):
+
+                charts.append(
+                    self._create_chart(
+                        worksheet=worksheet.name,
+                        chart_type=ChartType.SCATTER,
+                        title=f"{measures[i].name} vs {measures[j].name}",
+                        x=measures[i].name,
+                        y=measures[j].name,
+                    )
+                )
+
+        return charts
+
+    def _recommend_histograms(
+        self,
+        worksheet: WorksheetProfile,
+        measures: list[ColumnProfile],
+    ) -> list[Chart]:
+
+        charts: list[Chart] = []
+
+        for measure in measures:
+
+            charts.append(
+                self._create_chart(
+                    worksheet=worksheet.name,
+                    chart_type=ChartType.HISTOGRAM,
+                    title=f"{measure.name} Distribution",
+                    x=measure.name,
+                )
+            )
+
+        return charts

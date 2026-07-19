@@ -1,6 +1,6 @@
 from app.services.dashboard.models import Dashboard
 from app.services.dashboard.recommender import DashboardRecommender
-from app.services.profiling.models import WorkbookProfile
+from app.services.profiler.models import WorkbookProfile
 
 
 class DashboardGenerator:

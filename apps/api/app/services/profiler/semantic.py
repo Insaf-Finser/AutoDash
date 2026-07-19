@@ -334,6 +334,10 @@ class SemanticDetector:
             2,
         )
 
+        print(f"\n{column_name}")
+        print(scores)
+        print(best_type)
+
         return best_type, confidence
 
     def _score_physical_type(
@@ -674,20 +678,6 @@ class SemanticDetector:
         # -----------------------------------------
 
         numeric_values = []
-
-        for value in values:
-            try:
-                numeric_values.append(float(value))
-            except ValueError:
-                pass
-
-        if len(numeric_values) == len(values):
-
-            if all(-90 <= value <= 90 for value in numeric_values):
-                scores["location"] += 20
-
-            if all(-180 <= value <= 180 for value in numeric_values):
-                scores["location"] += 20
 
         # -----------------------------------------
         # Small repeated string set
