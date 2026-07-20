@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from app.services.dashboard.types import ChartType
+from app.enums.aggregation_type import AggregationType
 
 
 class Chart(BaseModel):
@@ -12,6 +13,8 @@ class Chart(BaseModel):
     y: str | None = None
 
     worksheet: str
+
+    aggregation: AggregationType | None = None
 
 
 class Dashboard(BaseModel):

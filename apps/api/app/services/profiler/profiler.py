@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from app.services.profiling.detector import TypeDetector
-from app.services.profiling.loader import WorkbookLoader
-from app.services.profiling.models import (
+from app.services.profiler.detector import TypeDetector
+from app.services.profiler.models import (
     ColumnProfile,
     WorkbookProfile,
     WorksheetProfile,
 )
-from app.services.profiling.statistics import StatisticsEngine
-from app.services.profiling.semantic import SemanticDetector
+from app.services.profiler.statistics import StatisticsEngine
+from app.services.profiler.semantic import SemanticDetector
+from app.services.parser.models import Workbook
 
 
 
@@ -18,7 +18,6 @@ class Profiler:
     """
 
     def __init__(self) -> None:
-        self.loader = WorkbookLoader()
         self.detector = TypeDetector()
         self.statistics = StatisticsEngine()
         self.semantic = SemanticDetector()
@@ -26,14 +25,16 @@ class Profiler:
 
     def profile(
         self,
-        data: bytes,
+        workbook: Workbook,
     ) -> WorkbookProfile:
 
-        workbook = self.loader.load(data)
 
         worksheets: list[WorksheetProfile] = []
 
-        for sheet_name, dataframe in workbook.items():
+        for worksheet in workbook.worksheets:
+
+            dataframe = worksheet.data
+
 
             columns: list[ColumnProfile] = []
 
@@ -70,9 +71,9 @@ class Profiler:
 
             worksheets.append(
                 WorksheetProfile(
-                    name=sheet_name,
-                    row_count=dataframe.height,
-                    column_count=dataframe.width,
+                    name=worksheet.name,
+                    row_count=worksheet.row_count,
+                    column_count=worksheet.column_count,
                     columns=columns,
                 )
             )

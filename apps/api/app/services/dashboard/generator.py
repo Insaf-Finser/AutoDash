@@ -1,7 +1,9 @@
-from app.services.dashboard.models import Dashboard
+from app.services.dashboard.data.models import DashboardData
 from app.services.dashboard.recommender import DashboardRecommender
 from app.services.profiler.models import WorkbookProfile
-
+from app.services.dashboard.data.engine import ChartDataEngine
+from app.services.dashboard.planner import DashboardPlanner
+from app.models.workbook import Workbook
 
 class DashboardGenerator:
     """
@@ -10,15 +12,20 @@ class DashboardGenerator:
 
     def __init__(self):
         self.recommender = DashboardRecommender()
+        self.planner = DashboardPlanner()
+        self.engine = ChartDataEngine()
 
     def generate(
         self,
+        workbook:Workbook,
         profile: WorkbookProfile,
-    ) -> Dashboard:
+    ) -> DashboardData:
         """
         Generate the dashboard.
         """
 
         dashboard = self.recommender.recommend(profile)
 
-        return dashboard
+        plan = self.planner.plan(dashboard)
+
+        return self.engine.build(workbook,plan)

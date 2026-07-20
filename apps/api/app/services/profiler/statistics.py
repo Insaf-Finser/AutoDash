@@ -1,6 +1,6 @@
 import polars as pl
 
-from app.services.profiling.models import ColumnStatistics
+from app.services.profiler.models import ColumnStatistics
 
 
 class StatisticsEngine:

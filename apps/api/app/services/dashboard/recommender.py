@@ -9,6 +9,7 @@ from app.services.profiler.models import (
     WorkbookProfile,
     WorksheetProfile,
 )
+from app.enums.aggregation_type import AggregationType
 
 from dataclasses import dataclass
 
@@ -44,49 +45,49 @@ class DashboardRecommender:
 
         for worksheet in profile.worksheets:
 
-            context = self._group_columns(worksheet)
+            grouped = self._group_columns(worksheet)
 
             charts.extend(
                 self._recommend_time_series(
                     worksheet,
-                    context.dates,
-                    context.measures,
+                    grouped["dates"],
+                    grouped["measures"],
                 )
             )
 
             charts.extend(
                 self._recommend_category_charts(
                     worksheet,
-                    context.categories,
-                    context.measures,
+                    grouped["categories"],
+                    grouped["measures"],
                 )
             )
 
             charts.extend(
                 self._recommend_boolean_charts(
                     worksheet,
-                    context.measures,
+                    grouped["booleans"],
                 )
             )
 
             charts.extend(
                 self._recommend_kpis(
                     worksheet,
-                    context.measures,
+                    grouped["measures"],
                 )
             )
 
             charts.extend(
                 self._recommend_scatter(
                     worksheet,
-                    context.measures,
+                    grouped["measures"],
                 )
             )
 
             charts.extend(
                 self._recommend_histograms(
                     worksheet,
-                    context.measures,
+                    grouped["measures"],
                 )
             )
 
@@ -132,8 +133,10 @@ class DashboardRecommender:
         worksheet: str,
         chart_type: ChartType,
         title: str,
+        aggregation: AggregationType | None = None,
         x: str | None = None,
         y: str | None = None,
+        
     ) -> Chart:
 
         return Chart(
@@ -141,8 +144,10 @@ class DashboardRecommender:
             worksheet=worksheet,
             type=chart_type,
             title=title,
+            aggregation=aggregation,
             x=x,
             y=y,
+
         )
 
     # ==========================================================
@@ -171,6 +176,7 @@ class DashboardRecommender:
                         title=f"{measure.name} over {date.name}",
                         x=date.name,
                         y=measure.name,
+                        aggregation=AggregationType.SUM,
                     )
                 )
 
@@ -196,6 +202,7 @@ class DashboardRecommender:
                         worksheet=worksheet.name,
                         chart_type=ChartType.BAR,
                         title=f"{measure.name} by {category.name}",
+                        aggregation=AggregationType.SUM,
                         x=category.name,
                         y=measure.name,
                     )
@@ -221,6 +228,7 @@ class DashboardRecommender:
                     worksheet=worksheet.name,
                     chart_type=ChartType.PIE,
                     title=f"{boolean.name} Distribution",
+                    aggregation=AggregationType.COUNT,
                     x=boolean.name,
                 )
             )
@@ -245,6 +253,7 @@ class DashboardRecommender:
                     worksheet=worksheet.name,
                     chart_type=ChartType.KPI,
                     title=f"Total {measure.name}",
+                    aggregation=AggregationType.SUM,
                     y=measure.name,
                 )
             )
@@ -270,6 +279,7 @@ class DashboardRecommender:
                         worksheet=worksheet.name,
                         chart_type=ChartType.SCATTER,
                         title=f"{measures[i].name} vs {measures[j].name}",
+                        aggregation=AggregationType.SUM,
                         x=measures[i].name,
                         y=measures[j].name,
                     )
@@ -292,6 +302,7 @@ class DashboardRecommender:
                     worksheet=worksheet.name,
                     chart_type=ChartType.HISTOGRAM,
                     title=f"{measure.name} Distribution",
+                    aggregation=AggregationType.COUNT,
                     x=measure.name,
                 )
             )

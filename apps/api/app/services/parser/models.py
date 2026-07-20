@@ -15,3 +15,18 @@ class WorkbookMetadata(BaseModel):
 
     worksheets: list[WorksheetMetadata]
 
+from dataclasses import dataclass
+
+import polars as pl
+
+
+@dataclass(slots=True, frozen=True)
+class Worksheet:
+    name: str
+    row_count: int
+    column_count: int
+    data: pl.DataFrame
+
+@dataclass(slots=True, frozen=True)
+class Workbook:
+    worksheets: list[Worksheet]
